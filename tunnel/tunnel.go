@@ -329,6 +329,10 @@ func preHandleMetadata(metadata *C.Metadata) error {
 }
 
 func resolveMetadata(metadata *C.Metadata) (proxy C.Proxy, rule C.Rule, err error) {
+	// Control-plane requests must bypass GLOBAL and user routing rules too.
+	if statistic.Managed.IsControl(metadata.Host) || statistic.Managed.IsControl(metadata.DstIP.String()) {
+		return proxies["DIRECT"], nil, nil
+	}
 	if metadata.SpecialProxy != "" {
 		var exist bool
 		proxy, exist = proxies[metadata.SpecialProxy]
@@ -382,6 +386,7 @@ func processUDP(queue chan C.PacketAdapter) {
 }
 
 func handleUDPConn(packet C.PacketAdapter) {
+	if !statistic.Managed.Allowed() { packet.Drop(); return }
 	if !isHandle(packet.Metadata().Type) {
 		packet.Drop()
 		return
@@ -464,6 +469,7 @@ func handleUDPConn(packet C.PacketAdapter) {
 }
 
 func handleTCPConn(connCtx C.ConnContext) {
+	if !statistic.Managed.Allowed() { _ = connCtx.Conn().Close(); return }
 	if !isHandle(connCtx.Metadata().Type) {
 		_ = connCtx.Conn().Close()
 		return

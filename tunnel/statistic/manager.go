@@ -69,7 +69,10 @@ func (m *Manager) Range(f func(c Tracker) bool) {
 	})
 }
 
-func (m *Manager) PushUploaded(lastChain string, size int64) {
+func (m *Manager) PushUploaded(lastChain string, size int64, generation ...uint64) {
+	if len(generation) > 0 {
+		Managed.AddGeneration(generation[0], lastChain, 0, size)
+	}
 	if lastChain != "DIRECT" {
 		m.proxyUploadTemp.Add(size)
 		m.proxyUploadTotal.Add(size)
@@ -78,7 +81,10 @@ func (m *Manager) PushUploaded(lastChain string, size int64) {
 	m.uploadTotal.Add(size)
 }
 
-func (m *Manager) PushDownloaded(lastChain string, size int64) {
+func (m *Manager) PushDownloaded(lastChain string, size int64, generation ...uint64) {
+	if len(generation) > 0 {
+		Managed.AddGeneration(generation[0], lastChain, 1, size)
+	}
 	if lastChain != "DIRECT" {
 		m.proxyDownloadTemp.Add(size)
 		m.proxyDownloadTotal.Add(size)
